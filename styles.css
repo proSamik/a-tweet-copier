@@ -67,6 +67,11 @@
   padding: 5px 0; /* Add padding inside dropdown */
 }
 
+/* Make dropdown visible on hover as a fallback for JavaScript */
+.thread-copy-dropdown:hover .thread-copy-dropdown-content {
+  display: block;
+}
+
 /* Larger hover area to prevent dropdown from disappearing */
 .thread-copy-dropdown::after {
   content: '';
