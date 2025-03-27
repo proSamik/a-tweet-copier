@@ -373,12 +373,20 @@ const createThreadCopyDropdown = (tweetElement) => {
   const button = document.createElement('button');
   button.className = 'thread-copy-button';
   button.innerHTML = '🧵'; // Thread icon
-  button.title = '';
+  button.title = 'Copy Thread';
+  
+  // Direct click on thread button will copy the entire thread
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Copy all tweets in thread
+    copyTweets(tweets, tweets.length, button);
+  });
   
   const dropdownContent = document.createElement('div');
   dropdownContent.className = 'thread-copy-dropdown-content';
   
-  // Quick options for copying different numbers of tweets (up to 3)
+  // Quick options for copying different numbers of tweets
   const quickOptionCount = Math.min(tweets.length, 3);
   
   for (let i = 1; i <= quickOptionCount; i++) {
@@ -415,6 +423,15 @@ const createThreadCopyDropdown = (tweetElement) => {
   customOption.appendChild(input);
   customOption.appendChild(copyBtn);
   dropdownContent.appendChild(customOption);
+  
+  // Add hover functionality to show dropdown
+  dropdown.onmouseenter = () => {
+    dropdownContent.style.display = 'block';
+  };
+  
+  dropdown.onmouseleave = () => {
+    dropdownContent.style.display = 'none';
+  };
   
   dropdown.appendChild(button);
   dropdown.appendChild(dropdownContent);
@@ -546,12 +563,31 @@ const init = () => {
     }
   }).observe(document, {subtree: true, childList: true});
   
+  /**
+   * Opens the dashboard in a new tab
+   */
+  const openDashboard = () => {
+    chrome.runtime.sendMessage({ action: "openDashboard" });
+  };
+  
+  // Create a styled button for the console
+  const consoleButton = `
+    %c Open Dashboard %c
+  `;
+  const buttonStyle = "background-color: #1DA1F2; color: white; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer;";
+  const resetStyle = "";
+  
+  // Show the button in console
+  console.log(consoleButton, buttonStyle, resetStyle);
+  console.log("Click the button above to open the Tweet Copier Dashboard");
+  
   // Expose storage functions to global scope for console access
   window.tweetCopier = {
     listTweets: () => tweetStorage.logTweetsTable(),
     getTweets: (callback) => tweetStorage.getSavedTweets(callback),
     deleteTweet: (localId, callback) => tweetStorage.deleteTweet(localId, callback),
-    updateTweet: (localId, updatedData, callback) => tweetStorage.updateTweet(localId, updatedData, callback)
+    updateTweet: (localId, updatedData, callback) => tweetStorage.updateTweet(localId, updatedData, callback),
+    openDashboard: openDashboard
   };
   
   // Log a message to show how to access the tweets database
@@ -563,6 +599,7 @@ const init = () => {
   - tweetCopier.getTweets(callback) - Get the raw tweet data
   - tweetCopier.deleteTweet("localId", callback) - Delete a tweet by its localId
   - tweetCopier.updateTweet("localId", { text: "Updated text" }, callback) - Update a tweet
+  - tweetCopier.openDashboard() - Open the full dashboard in a new tab
   `);
 };
 
