@@ -7,7 +7,7 @@
     "default_popup": "popup.html",
     "default_title": "Tweet Copier"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "clipboardWrite"],
   "host_permissions": ["https://x.com/*", "https://twitter.com/*"],
   "content_scripts": [
     {
