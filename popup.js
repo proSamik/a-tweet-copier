@@ -8,80 +8,90 @@
  */
 const tweetStorage = {
   /**
-   * Gets all saved tweets from localStorage
-   * @returns {Array} Array of saved tweets
+   * Gets all saved tweets from chrome.storage
+   * @param {Function} callback - Callback with tweets array
    */
-  getSavedTweets: () => {
-    const savedTweets = localStorage.getItem('tweetCopier_savedTweets');
-    return savedTweets ? JSON.parse(savedTweets) : [];
+  getSavedTweets: (callback) => {
+    chrome.storage.local.get(['tweetCopier_savedTweets'], (result) => {
+      const tweets = result.tweetCopier_savedTweets || [];
+      callback(tweets);
+    });
   },
 
   /**
    * Updates an existing tweet
    * @param {string} localId - The local ID of the tweet to update
    * @param {Object} updatedData - The data to update
-   * @returns {boolean} Success status
+   * @param {Function} callback - Optional callback after update
    */
-  updateTweet: (localId, updatedData) => {
-    const savedTweets = tweetStorage.getSavedTweets();
-    const tweetIndex = savedTweets.findIndex(tweet => tweet.localId === localId);
-    
-    if (tweetIndex === -1) {
-      console.error('Tweet not found for updating:', localId);
-      return false;
-    }
-    
-    // Update the tweet
-    savedTweets[tweetIndex] = {
-      ...savedTweets[tweetIndex],
-      ...updatedData,
-      isEdited: true,
-      lastEditTime: new Date().toISOString()
-    };
-    
-    localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(savedTweets));
-    console.log('Tweet updated:', savedTweets[tweetIndex]);
-    return true;
+  updateTweet: (localId, updatedData, callback) => {
+    chrome.storage.local.get(['tweetCopier_savedTweets'], (result) => {
+      const savedTweets = result.tweetCopier_savedTweets || [];
+      const tweetIndex = savedTweets.findIndex(tweet => tweet.localId === localId);
+      
+      if (tweetIndex === -1) {
+        console.error('Tweet not found for updating:', localId);
+        if (callback) callback(false);
+        return;
+      }
+      
+      // Update the tweet
+      savedTweets[tweetIndex] = {
+        ...savedTweets[tweetIndex],
+        ...updatedData,
+        isEdited: true,
+        lastEditTime: new Date().toISOString()
+      };
+      
+      chrome.storage.local.set({ 'tweetCopier_savedTweets': savedTweets }, () => {
+        console.log('Tweet updated:', savedTweets[tweetIndex]);
+        if (callback) callback(true);
+      });
+    });
   },
 
   /**
    * Deletes a tweet from storage
    * @param {string} localId - The local ID of the tweet to delete
-   * @returns {boolean} Success status
+   * @param {Function} callback - Optional callback after deletion
    */
-  deleteTweet: (localId) => {
-    const savedTweets = tweetStorage.getSavedTweets();
-    const filteredTweets = savedTweets.filter(tweet => tweet.localId !== localId);
-    
-    if (filteredTweets.length === savedTweets.length) {
-      console.error('Tweet not found for deletion:', localId);
-      return false;
-    }
-    
-    localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(filteredTweets));
-    console.log('Tweet deleted:', localId);
-    return true;
+  deleteTweet: (localId, callback) => {
+    chrome.storage.local.get(['tweetCopier_savedTweets'], (result) => {
+      const savedTweets = result.tweetCopier_savedTweets || [];
+      const filteredTweets = savedTweets.filter(tweet => tweet.localId !== localId);
+      
+      if (filteredTweets.length === savedTweets.length) {
+        console.error('Tweet not found for deletion:', localId);
+        if (callback) callback(false);
+        return;
+      }
+      
+      chrome.storage.local.set({ 'tweetCopier_savedTweets': filteredTweets }, () => {
+        console.log('Tweet deleted:', localId);
+        if (callback) callback(true);
+      });
+    });
   },
   
   /**
    * Gets statistics about saved tweets
-   * @returns {Object} Stats object
+   * @param {Function} callback - Callback with stats object
    */
-  getStats: () => {
-    const tweets = tweetStorage.getSavedTweets();
-    
-    // Today's date (start of day)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const stats = {
-      totalTweets: tweets.length,
-      uniqueAuthors: new Set(tweets.map(t => t.author)).size,
-      copiedToday: tweets.filter(t => new Date(t.timestamp) >= today).length,
-      editedTweets: tweets.filter(t => t.isEdited).length
-    };
-    
-    return stats;
+  getStats: (callback) => {
+    tweetStorage.getSavedTweets((tweets) => {
+      // Today's date (start of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const stats = {
+        totalTweets: tweets.length,
+        uniqueAuthors: new Set(tweets.map(t => t.author)).size,
+        copiedToday: tweets.filter(t => new Date(t.timestamp) >= today).length,
+        editedTweets: tweets.filter(t => t.isEdited).length
+      };
+      
+      callback(stats);
+    });
   }
 };
 
@@ -125,110 +135,112 @@ const updateTweetsTable = (searchQuery = '') => {
   tableBody.innerHTML = '';
   
   // Get tweets and sort by timestamp (newest first)
-  let tweets = tweetStorage.getSavedTweets()
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  
-  // Apply search filter if provided
-  if (searchQuery) {
-    const query = searchQuery.toLowerCase();
-    tweets = tweets.filter(tweet => 
-      tweet.text.toLowerCase().includes(query) || 
-      tweet.author.toLowerCase().includes(query)
-    );
-  }
-  
-  if (tweets.length === 0) {
-    tableBody.innerHTML = '';
-    emptyState.style.display = 'block';
-    return;
-  }
-  
-  emptyState.style.display = 'none';
-  
-  // Create table rows for each tweet
-  tweets.forEach(tweet => {
-    const row = document.createElement('tr');
+  tweetStorage.getSavedTweets((allTweets) => {
+    let tweets = allTweets.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
-    // Author column
-    const authorCell = document.createElement('td');
-    authorCell.textContent = tweet.author;
-    row.appendChild(authorCell);
-    
-    // Tweet text column
-    const textCell = document.createElement('td');
-    const shortText = tweet.text.length > 30 ? `${tweet.text.substring(0, 30)}...` : tweet.text;
-    textCell.textContent = shortText;
-    if (tweet.isEdited) {
-      const editBadge = document.createElement('span');
-      editBadge.textContent = ' (edited)';
-      editBadge.style.color = '#657786';
-      editBadge.style.fontSize = '11px';
-      textCell.appendChild(editBadge);
+    // Apply search filter if provided
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      tweets = tweets.filter(tweet => 
+        tweet.text.toLowerCase().includes(query) || 
+        tweet.author.toLowerCase().includes(query)
+      );
     }
-    row.appendChild(textCell);
     
-    // Date column
-    const dateCell = document.createElement('td');
-    dateCell.textContent = formatDate(tweet.timestamp);
-    row.appendChild(dateCell);
+    if (tweets.length === 0) {
+      tableBody.innerHTML = '';
+      emptyState.style.display = 'block';
+      return;
+    }
     
-    // Actions column
-    const actionsCell = document.createElement('td');
-    actionsCell.className = 'tweet-controls';
+    emptyState.style.display = 'none';
     
-    // Copy button
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'btn';
-    copyBtn.innerHTML = '📋';
-    copyBtn.title = 'Copy Tweet';
-    copyBtn.addEventListener('click', async () => {
-      const success = await copyToClipboard(`${tweet.author}: ${tweet.text}`);
-      if (success) {
-        copyBtn.innerHTML = '✅';
-        setTimeout(() => {
-          copyBtn.innerHTML = '📋';
-        }, 2000);
+    // Create table rows for each tweet
+    tweets.forEach(tweet => {
+      const row = document.createElement('tr');
+      
+      // Author column
+      const authorCell = document.createElement('td');
+      authorCell.textContent = tweet.author;
+      row.appendChild(authorCell);
+      
+      // Tweet text column
+      const textCell = document.createElement('td');
+      const shortText = tweet.text.length > 30 ? `${tweet.text.substring(0, 30)}...` : tweet.text;
+      textCell.textContent = shortText;
+      if (tweet.isEdited) {
+        const editBadge = document.createElement('span');
+        editBadge.textContent = ' (edited)';
+        editBadge.style.color = '#657786';
+        editBadge.style.fontSize = '11px';
+        textCell.appendChild(editBadge);
       }
+      row.appendChild(textCell);
+      
+      // Date column
+      const dateCell = document.createElement('td');
+      dateCell.textContent = formatDate(tweet.timestamp);
+      row.appendChild(dateCell);
+      
+      // Actions column
+      const actionsCell = document.createElement('td');
+      actionsCell.className = 'tweet-controls';
+      
+      // Copy button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn';
+      copyBtn.innerHTML = '📋';
+      copyBtn.title = 'Copy Tweet';
+      copyBtn.addEventListener('click', async () => {
+        const success = await copyToClipboard(`${tweet.author}: ${tweet.text}`);
+        if (success) {
+          copyBtn.innerHTML = '✅';
+          setTimeout(() => {
+            copyBtn.innerHTML = '📋';
+          }, 2000);
+        }
+      });
+      actionsCell.appendChild(copyBtn);
+      
+      // Edit button
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn';
+      editBtn.innerHTML = '✏️';
+      editBtn.title = 'Edit Tweet';
+      editBtn.addEventListener('click', () => {
+        showEditForm(tweet);
+      });
+      actionsCell.appendChild(editBtn);
+      
+      // Delete button
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn btn-delete';
+      deleteBtn.innerHTML = '🗑️';
+      deleteBtn.title = 'Delete Tweet';
+      deleteBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to delete this tweet?')) {
+          tweetStorage.deleteTweet(tweet.localId, () => {
+            updateTweetsTable(searchQuery);
+            updateStats();
+          });
+        }
+      });
+      actionsCell.appendChild(deleteBtn);
+      
+      // Open link button
+      const linkBtn = document.createElement('button');
+      linkBtn.className = 'btn';
+      linkBtn.innerHTML = '🔗';
+      linkBtn.title = 'Open Tweet';
+      linkBtn.addEventListener('click', () => {
+        chrome.tabs.create({ url: tweet.url });
+      });
+      actionsCell.appendChild(linkBtn);
+      
+      row.appendChild(actionsCell);
+      
+      tableBody.appendChild(row);
     });
-    actionsCell.appendChild(copyBtn);
-    
-    // Edit button
-    const editBtn = document.createElement('button');
-    editBtn.className = 'btn';
-    editBtn.innerHTML = '✏️';
-    editBtn.title = 'Edit Tweet';
-    editBtn.addEventListener('click', () => {
-      showEditForm(tweet);
-    });
-    actionsCell.appendChild(editBtn);
-    
-    // Delete button
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn btn-delete';
-    deleteBtn.innerHTML = '🗑️';
-    deleteBtn.title = 'Delete Tweet';
-    deleteBtn.addEventListener('click', () => {
-      if (confirm('Are you sure you want to delete this tweet?')) {
-        tweetStorage.deleteTweet(tweet.localId);
-        updateTweetsTable(searchQuery);
-        updateStats();
-      }
-    });
-    actionsCell.appendChild(deleteBtn);
-    
-    // Open link button
-    const linkBtn = document.createElement('button');
-    linkBtn.className = 'btn';
-    linkBtn.innerHTML = '🔗';
-    linkBtn.title = 'Open Tweet';
-    linkBtn.addEventListener('click', () => {
-      chrome.tabs.create({ url: tweet.url });
-    });
-    actionsCell.appendChild(linkBtn);
-    
-    row.appendChild(actionsCell);
-    
-    tableBody.appendChild(row);
   });
 };
 
@@ -255,15 +267,15 @@ const showEditForm = (tweet) => {
  * Updates the statistics display
  */
 const updateStats = () => {
-  const stats = tweetStorage.getStats();
-  
-  document.getElementById('total-tweets').textContent = stats.totalTweets;
-  document.getElementById('total-authors').textContent = stats.uniqueAuthors;
-  document.getElementById('today-count').textContent = stats.copiedToday;
-  document.getElementById('edited-count').textContent = stats.editedTweets;
-  
-  // Update recent activity
-  updateRecentActivity();
+  tweetStorage.getStats((stats) => {
+    document.getElementById('total-tweets').textContent = stats.totalTweets;
+    document.getElementById('total-authors').textContent = stats.uniqueAuthors;
+    document.getElementById('today-count').textContent = stats.copiedToday;
+    document.getElementById('edited-count').textContent = stats.editedTweets;
+    
+    // Update recent activity
+    updateRecentActivity();
+  });
 };
 
 /**
@@ -273,52 +285,54 @@ const updateRecentActivity = () => {
   const container = document.getElementById('recent-activity');
   container.innerHTML = '';
   
-  const tweets = tweetStorage.getSavedTweets()
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, 5); // Show only 5 most recent
-  
-  if (tweets.length === 0) {
-    const emptyState = document.createElement('div');
-    emptyState.className = 'empty-state';
-    emptyState.textContent = 'No activity yet. Copy some tweets to see activity here.';
-    container.appendChild(emptyState);
-    return;
-  }
-  
-  tweets.forEach(tweet => {
-    const tweetItem = document.createElement('div');
-    tweetItem.className = 'tweet-item';
+  tweetStorage.getSavedTweets((allTweets) => {
+    const tweets = allTweets
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 5); // Show only 5 most recent
     
-    const author = document.createElement('div');
-    author.className = 'tweet-author';
-    author.textContent = tweet.author;
-    
-    const text = document.createElement('div');
-    text.className = 'tweet-text';
-    text.textContent = tweet.text;
-    
-    const footer = document.createElement('div');
-    footer.className = 'tweet-date';
-    
-    const date = document.createElement('span');
-    date.textContent = formatDate(tweet.timestamp);
-    footer.appendChild(date);
-    
-    if (tweet.url) {
-      const link = document.createElement('a');
-      link.href = '#';
-      link.textContent = 'View on X';
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        chrome.tabs.create({ url: tweet.url });
-      });
-      footer.appendChild(link);
+    if (tweets.length === 0) {
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-state';
+      emptyState.textContent = 'No activity yet. Copy some tweets to see activity here.';
+      container.appendChild(emptyState);
+      return;
     }
     
-    tweetItem.appendChild(author);
-    tweetItem.appendChild(text);
-    tweetItem.appendChild(footer);
-    container.appendChild(tweetItem);
+    tweets.forEach(tweet => {
+      const tweetItem = document.createElement('div');
+      tweetItem.className = 'tweet-item';
+      
+      const author = document.createElement('div');
+      author.className = 'tweet-author';
+      author.textContent = tweet.author;
+      
+      const text = document.createElement('div');
+      text.className = 'tweet-text';
+      text.textContent = tweet.text;
+      
+      const footer = document.createElement('div');
+      footer.className = 'tweet-date';
+      
+      const date = document.createElement('span');
+      date.textContent = formatDate(tweet.timestamp);
+      footer.appendChild(date);
+      
+      if (tweet.url) {
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = 'View on X';
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          chrome.tabs.create({ url: tweet.url });
+        });
+        footer.appendChild(link);
+      }
+      
+      tweetItem.appendChild(author);
+      tweetItem.appendChild(text);
+      tweetItem.appendChild(footer);
+      container.appendChild(tweetItem);
+    });
   });
 };
 
@@ -361,11 +375,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tweetStorage.updateTweet(idInput.value, {
       author: authorInput.value,
       text: textInput.value
+    }, () => {
+      document.getElementById('edit-form').classList.remove('active');
+      updateTweetsTable(searchInput.value);
+      updateStats();
     });
-    
-    document.getElementById('edit-form').classList.remove('active');
-    updateTweetsTable(searchInput.value);
-    updateStats();
   });
   
   const cancelEditBtn = document.getElementById('cancel-edit');
