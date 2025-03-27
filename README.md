@@ -1,4 +1,4 @@
-![Screenshot 2025-03-28 at 04 00 05](https://github.com/user-attachments/assets/9ea6b0eb-3de3-4f41-a00c-a543dac3f45c)# Tweet Copier Chrome Extension
+# Tweet Copier Chrome Extension
 
 A Chrome extension that adds copy buttons to tweets on X.com (formerly Twitter).
 
