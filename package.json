@@ -1,0 +1,21 @@
+{
+  "name": "tweet-copier",
+  "version": "1.0.0",
+  "description": "Chrome extension to add copy buttons to tweets on X.com",
+  "private": true,
+  "scripts": {
+    "zip": "node scripts/package.js"
+  },
+  "keywords": [
+    "chrome-extension",
+    "twitter",
+    "x.com",
+    "tweet",
+    "copy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "archiver": "^5.3.1"
+  }
+} 

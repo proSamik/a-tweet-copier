@@ -1,0 +1,164 @@
+/* Tweet Copier Extension Styles */
+
+.tweet-copy-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 5px;
+  margin: 0;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tweet-copy-button:hover {
+  transform: scale(1.2);
+  background-color: rgba(29, 161, 242, 0.1);
+}
+
+.tweet-copy-button-wrapper {
+  display: flex;
+  align-items: center;
+  margin: 0 8px;
+}
+
+.thread-copy-dropdown {
+  position: relative;
+  display: inline-block;
+  margin: 0 8px;
+}
+
+.thread-copy-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px; /* Slightly larger for better visibility */
+  padding: 5px;
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thread-copy-button:hover {
+  transform: scale(1.2);
+  background-color: rgba(29, 161, 242, 0.1);
+}
+
+/* Improved dropdown styling */
+.thread-copy-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: var(--background-color, #fff);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  min-width: 160px;
+  z-index: 1000;
+  bottom: 40px;
+  right: -10px; /* Adjusted positioning */
+  padding: 5px 0; /* Add padding inside dropdown */
+}
+
+/* Make dropdown visible on hover */
+.thread-copy-dropdown:hover .thread-copy-dropdown-content {
+  display: block;
+}
+
+/* Larger hover area to prevent dropdown from disappearing */
+.thread-copy-dropdown::after {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 100%;
+  bottom: 32px;
+  left: 0;
+  z-index: 999;
+}
+
+/* Gap filler between button and dropdown to maintain hover state */
+.thread-copy-dropdown-content::after {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 100%;
+  bottom: -20px;
+  left: 0;
+}
+
+/* Auto-detect dark mode from X's theme */
+@media (prefers-color-scheme: dark) {
+  .thread-copy-dropdown-content {
+    --background-color: #15202b;
+    color: #fff;
+    border: 1px solid #38444d;
+  }
+  
+  .thread-copy-custom input {
+    background-color: #192734;
+    border-color: #38444d;
+    color: #fff;
+  }
+}
+
+.thread-copy-dropdown-content div {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.thread-copy-dropdown-content div:hover {
+  background-color: rgba(29, 161, 242, 0.1);
+}
+
+.thread-copy-dropdown-content div:first-child {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.thread-copy-dropdown-content div:last-child {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Custom number input field - always shown */
+.thread-copy-custom {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: 5px;
+}
+
+.thread-copy-custom input {
+  width: 60px;
+  padding: 6px;
+  margin-right: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: var(--background-color, #fff);
+  color: inherit;
+}
+
+.thread-copy-custom button {
+  background-color: rgb(29, 155, 240);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  flex-grow: 1;
+}
+
+.thread-copy-custom button:hover {
+  background-color: rgb(26, 140, 216);
+} 

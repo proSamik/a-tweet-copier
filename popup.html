@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tweet Copier</title>
+  <style>
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 16px;
+      margin: 0;
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin-top: 0;
+      color: rgb(29, 155, 240);
+    }
+    
+    .saved-tweets {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .tweet-item {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .tweet-item:last-child {
+      border-bottom: none;
+    }
+    
+    .tweet-author {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .tweet-text {
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    
+    .tweet-date {
+      font-size: 12px;
+      color: #657786;
+    }
+    
+    .copy-again {
+      background-color: rgb(29, 155, 240);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      float: right;
+    }
+    
+    .copy-again:hover {
+      background-color: rgb(26, 140, 216);
+    }
+    
+    .empty-state {
+      padding: 32px 16px;
+      text-align: center;
+      color: #657786;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #15202b;
+        color: #fff;
+      }
+      
+      .tweet-item {
+        border-bottom: 1px solid #38444d;
+      }
+      
+      .empty-state {
+        color: #8899a6;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Tweet Copier</h1>
+  
+  <div id="savedTweets" class="saved-tweets"></div>
+  
+  <script src="popup.js"></script>
+</body>
+</html> 
