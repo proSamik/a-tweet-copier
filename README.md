@@ -1,14 +1,20 @@
-# Tweet Copier Chrome Extension
+![Screenshot 2025-03-28 at 04 00 05](https://github.com/user-attachments/assets/9ea6b0eb-3de3-4f41-a00c-a543dac3f45c)# Tweet Copier Chrome Extension
 
 A Chrome extension that adds copy buttons to tweets on X.com (formerly Twitter).
 
 ## Demo
 
+### Copy Single Tweet
 ![CopyTweet](https://github.com/user-attachments/assets/cf83354b-bcba-4d99-976f-f10830837703)
 
-
+### Copy Thread of the Tweet
 ![CopyThread](https://github.com/user-attachments/assets/5c259818-1173-45d9-8eb7-929630caa54c)
 
+### Popup View with CRUD operations for the copied tweets
+![Popup](https://github.com/user-attachments/assets/8ef2afe4-870a-46a8-8fea-fa2af10e8c58)
+
+### Dashboard view of the copied tweets
+![Dashboard](https://github.com/user-attachments/assets/917c8a86-9161-4334-be18-435cf017925d)
 
 ## Features
 
