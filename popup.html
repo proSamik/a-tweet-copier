@@ -20,6 +20,30 @@
       margin-bottom: 16px;
     }
     
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .open-dashboard-btn {
+      background-color: rgb(29, 155, 240);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .open-dashboard-btn:hover {
+      background-color: rgb(26, 140, 216);
+    }
+    
     .tabs {
       display: flex;
       border-bottom: 1px solid #eee;
@@ -314,10 +338,15 @@
   </style>
 </head>
 <body>
-  <h1>Tweet Copier</h1>
+  <div class="header">
+    <h1>Saved Tweets</h1>
+    <button id="open-dashboard" class="open-dashboard-btn">
+      <span>📊</span> Full Dashboard
+    </button>
+  </div>
   
   <div class="tabs">
-    <div class="tab active" data-tab="tweets">Saved Tweets</div>
+    <div class="tab active" data-tab="tweets">Tweets</div>
     <div class="tab" data-tab="stats">Stats</div>
   </div>
   
