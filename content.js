@@ -9,19 +9,31 @@ const tweetStorage = {
    * @param {string} tweetText - The text content of the tweet
    * @param {string} tweetId - The ID of the tweet
    * @param {string} authorName - The author of the tweet
+   * @param {string} tweetUrl - The URL of the tweet
    */
-  saveTweet: (tweetText, tweetId, authorName) => {
+  saveTweet: (tweetText, tweetId, authorName, tweetUrl = '') => {
     const savedTweets = tweetStorage.getSavedTweets();
     const timestamp = new Date().toISOString();
     
-    savedTweets.push({
+    // Generate a unique local ID for the saved tweet
+    const localId = `tweet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const newTweet = {
       id: tweetId,
+      localId: localId,
       text: tweetText,
       author: authorName,
-      timestamp
-    });
+      url: tweetUrl || `https://x.com/i/status/${tweetId}`,
+      timestamp,
+      isEdited: false,
+      lastEditTime: null
+    };
+    
+    savedTweets.push(newTweet);
     
     localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(savedTweets));
+    console.log('Tweet saved:', newTweet);
+    return newTweet;
   },
   
   /**
@@ -31,6 +43,76 @@ const tweetStorage = {
   getSavedTweets: () => {
     const savedTweets = localStorage.getItem('tweetCopier_savedTweets');
     return savedTweets ? JSON.parse(savedTweets) : [];
+  },
+  
+  /**
+   * Updates an existing tweet
+   * @param {string} localId - The local ID of the tweet to update
+   * @param {Object} updatedData - The data to update
+   * @returns {boolean} Success status
+   */
+  updateTweet: (localId, updatedData) => {
+    const savedTweets = tweetStorage.getSavedTweets();
+    const tweetIndex = savedTweets.findIndex(tweet => tweet.localId === localId);
+    
+    if (tweetIndex === -1) {
+      console.error('Tweet not found for updating:', localId);
+      return false;
+    }
+    
+    // Update the tweet
+    savedTweets[tweetIndex] = {
+      ...savedTweets[tweetIndex],
+      ...updatedData,
+      isEdited: true,
+      lastEditTime: new Date().toISOString()
+    };
+    
+    localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(savedTweets));
+    console.log('Tweet updated:', savedTweets[tweetIndex]);
+    return true;
+  },
+  
+  /**
+   * Deletes a tweet from storage
+   * @param {string} localId - The local ID of the tweet to delete
+   * @returns {boolean} Success status
+   */
+  deleteTweet: (localId) => {
+    const savedTweets = tweetStorage.getSavedTweets();
+    const filteredTweets = savedTweets.filter(tweet => tweet.localId !== localId);
+    
+    if (filteredTweets.length === savedTweets.length) {
+      console.error('Tweet not found for deletion:', localId);
+      return false;
+    }
+    
+    localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(filteredTweets));
+    console.log('Tweet deleted:', localId);
+    return true;
+  },
+  
+  /**
+   * Logs all saved tweets to console in table format
+   */
+  logTweetsTable: () => {
+    const tweets = tweetStorage.getSavedTweets();
+    if (tweets.length === 0) {
+      console.log('No saved tweets found.');
+      return;
+    }
+    
+    // Format data for console table
+    const tableData = tweets.map(tweet => ({
+      ID: tweet.localId,
+      Author: tweet.author,
+      Text: tweet.text.length > 30 ? tweet.text.substring(0, 30) + '...' : tweet.text,
+      'Copied At': new Date(tweet.timestamp).toLocaleString(),
+      Edited: tweet.isEdited ? 'Yes' : 'No'
+    }));
+    
+    console.table(tableData);
+    console.log('Full tweet data:', tweets);
   }
 };
 
@@ -95,6 +177,19 @@ const extractTweetId = (tweetElement) => {
   const href = linkElement.getAttribute('href');
   const match = href.match(/\/status\/(\d+)/);
   return match ? match[1] : 'unknown-id';
+};
+
+/**
+ * Extracts the tweet URL
+ * @param {HTMLElement} tweetElement - The tweet DOM element
+ * @returns {string} The tweet URL or empty string if not found
+ */
+const extractTweetUrl = (tweetElement) => {
+  const linkElement = tweetElement.querySelector('a[href*="/status/"]');
+  if (!linkElement) return '';
+  
+  const href = linkElement.getAttribute('href');
+  return href.startsWith('http') ? href : `https://x.com${href}`;
 };
 
 /**
@@ -233,16 +328,20 @@ const copyTweets = async (tweets, count, button) => {
     setTimeout(() => {
       button.innerHTML = originalContent;
     }, 2000);
-  }
-  
-  // Save first tweet to storage
-  if (selectedTweets.length > 0) {
-    const firstTweet = selectedTweets[0];
-    tweetStorage.saveTweet(
-      extractTweetText(firstTweet),
-      extractTweetId(firstTweet),
-      extractAuthorName(firstTweet)
-    );
+    
+    // Save first tweet to storage and log the table
+    if (selectedTweets.length > 0) {
+      const firstTweet = selectedTweets[0];
+      tweetStorage.saveTweet(
+        extractTweetText(firstTweet),
+        extractTweetId(firstTweet),
+        extractAuthorName(firstTweet),
+        extractTweetUrl(firstTweet)
+      );
+      
+      // Log the tweets table to console
+      tweetStorage.logTweetsTable();
+    }
   }
 };
 
@@ -330,6 +429,7 @@ const processTweet = (tweetElement) => {
     const tweetText = extractTweetText(tweetElement);
     const authorName = extractAuthorName(tweetElement);
     const tweetId = extractTweetId(tweetElement);
+    const tweetUrl = extractTweetUrl(tweetElement);
     
     const success = await copyToClipboard(`${authorName}: ${tweetText}`);
     
@@ -339,9 +439,13 @@ const processTweet = (tweetElement) => {
       setTimeout(() => {
         copyButton.innerHTML = '📋';
       }, 2000);
+      
+      // Save tweet to storage
+      tweetStorage.saveTweet(tweetText, tweetId, authorName, tweetUrl);
+      
+      // Log the tweets table to console
+      tweetStorage.logTweetsTable();
     }
-    
-    tweetStorage.saveTweet(tweetText, tweetId, authorName);
   });
   
   // Create a wrapper to match Twitter's action button style
@@ -428,6 +532,25 @@ const init = () => {
       setTimeout(processAllTweets, 1000);
     }
   }).observe(document, {subtree: true, childList: true});
+  
+  // Expose storage functions to global scope for console access
+  window.tweetCopier = {
+    listTweets: () => tweetStorage.logTweetsTable(),
+    getTweets: () => tweetStorage.getSavedTweets(),
+    deleteTweet: (localId) => tweetStorage.deleteTweet(localId),
+    updateTweet: (localId, updatedData) => tweetStorage.updateTweet(localId, updatedData)
+  };
+  
+  // Log a message to show how to access the tweets database
+  console.log(`
+  TweetCopier extension loaded!
+  
+  Use these commands in the console to manage your copied tweets:
+  - tweetCopier.listTweets() - View all tweets in table format
+  - tweetCopier.getTweets() - Get the raw tweet data
+  - tweetCopier.deleteTweet("localId") - Delete a tweet by its localId
+  - tweetCopier.updateTweet("localId", { text: "Updated text" }) - Update a tweet
+  `);
 };
 
 // Start the extension when the page is loaded
