@@ -342,15 +342,17 @@ const copyTweets = async (tweets, count, button) => {
       button.innerHTML = originalContent;
     }, 2000);
     
-    // Save first tweet to storage and log the table
+    // Save all selected tweets to storage
     if (selectedTweets.length > 0) {
-      const firstTweet = selectedTweets[0];
-      tweetStorage.saveTweet(
-        extractTweetText(firstTweet),
-        extractTweetId(firstTweet),
-        extractAuthorName(firstTweet),
-        extractTweetUrl(firstTweet)
-      );
+      // Save each tweet in the thread to storage
+      selectedTweets.forEach(tweet => {
+        tweetStorage.saveTweet(
+          extractTweetText(tweet),
+          extractTweetId(tweet),
+          extractAuthorName(tweet),
+          extractTweetUrl(tweet)
+        );
+      });
       
       // Log the tweets table to console
       tweetStorage.logTweetsTable();
