@@ -2,6 +2,14 @@
 
 A Chrome extension that adds copy buttons to tweets on X.com (formerly Twitter).
 
+## Demo
+
+![CopyTweet](https://github.com/user-attachments/assets/cf83354b-bcba-4d99-976f-f10830837703)
+
+
+![CopyThread](https://github.com/user-attachments/assets/5c259818-1173-45d9-8eb7-929630caa54c)
+
+
 ## Features
 
 - Adds a copy button to each tweet
@@ -43,3 +51,5 @@ A Chrome extension that adds copy buttons to tweets on X.com (formerly Twitter).
 ## License
 
 MIT 
+
+Also view this in- https://githubme.com/proSamik/a-tweet-copier for better view
