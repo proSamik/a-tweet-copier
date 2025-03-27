@@ -361,29 +361,44 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Set up search functionality
   const searchInput = document.getElementById('search-input');
-  searchInput.addEventListener('input', () => {
-    updateTweetsTable(searchInput.value);
-  });
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      updateTweetsTable(searchInput.value);
+    });
+  }
+  
+  // Set up dashboard button functionality
+  const dashboardBtn = document.getElementById('open-dashboard');
+  if (dashboardBtn) {
+    dashboardBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: "openDashboard" });
+    });
+  }
   
   // Set up edit form submit and cancel
   const saveEditBtn = document.getElementById('save-edit');
-  saveEditBtn.addEventListener('click', () => {
-    const idInput = document.getElementById('edit-tweet-id');
-    const authorInput = document.getElementById('edit-author');
-    const textInput = document.getElementById('edit-text');
-    
-    tweetStorage.updateTweet(idInput.value, {
-      author: authorInput.value,
-      text: textInput.value
-    }, () => {
-      document.getElementById('edit-form').classList.remove('active');
-      updateTweetsTable(searchInput.value);
-      updateStats();
-    });
-  });
-  
   const cancelEditBtn = document.getElementById('cancel-edit');
-  cancelEditBtn.addEventListener('click', () => {
-    document.getElementById('edit-form').classList.remove('active');
-  });
+  
+  if (saveEditBtn) {
+    saveEditBtn.addEventListener('click', () => {
+      const idInput = document.getElementById('edit-tweet-id');
+      const authorInput = document.getElementById('edit-author');
+      const textInput = document.getElementById('edit-text');
+      
+      tweetStorage.updateTweet(idInput.value, {
+        author: authorInput.value,
+        text: textInput.value
+      }, () => {
+        document.getElementById('edit-form').classList.remove('active');
+        updateTweetsTable(searchInput ? searchInput.value : '');
+        updateStats();
+      });
+    });
+  }
+  
+  if (cancelEditBtn) {
+    cancelEditBtn.addEventListener('click', () => {
+      document.getElementById('edit-form').classList.remove('active');
+    });
+  }
 }); 
