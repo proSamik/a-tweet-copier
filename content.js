@@ -5,114 +5,127 @@
 // Store for copied tweets
 const tweetStorage = {
   /**
-   * Saves a tweet to localStorage
+   * Saves a tweet to chrome.storage
    * @param {string} tweetText - The text content of the tweet
    * @param {string} tweetId - The ID of the tweet
    * @param {string} authorName - The author of the tweet
    * @param {string} tweetUrl - The URL of the tweet
    */
   saveTweet: (tweetText, tweetId, authorName, tweetUrl = '') => {
-    const savedTweets = tweetStorage.getSavedTweets();
-    const timestamp = new Date().toISOString();
-    
-    // Generate a unique local ID for the saved tweet
-    const localId = `tweet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const newTweet = {
-      id: tweetId,
-      localId: localId,
-      text: tweetText,
-      author: authorName,
-      url: tweetUrl || `https://x.com/i/status/${tweetId}`,
-      timestamp,
-      isEdited: false,
-      lastEditTime: null
-    };
-    
-    savedTweets.push(newTweet);
-    
-    localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(savedTweets));
-    console.log('Tweet saved:', newTweet);
-    return newTweet;
+    chrome.storage.local.get(['tweetCopier_savedTweets'], (result) => {
+      const savedTweets = result.tweetCopier_savedTweets || [];
+      const timestamp = new Date().toISOString();
+      
+      // Generate a unique local ID for the saved tweet
+      const localId = `tweet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const newTweet = {
+        id: tweetId,
+        localId: localId,
+        text: tweetText,
+        author: authorName,
+        url: tweetUrl || `https://x.com/i/status/${tweetId}`,
+        timestamp,
+        isEdited: false,
+        lastEditTime: null
+      };
+      
+      savedTweets.push(newTweet);
+      
+      chrome.storage.local.set({ 'tweetCopier_savedTweets': savedTweets }, () => {
+        console.log('Tweet saved:', newTweet);
+      });
+    });
   },
   
   /**
-   * Gets all saved tweets from localStorage
-   * @returns {Array} Array of saved tweets
+   * Gets all saved tweets from chrome.storage
+   * @param {Function} callback - Callback function with tweets data
    */
-  getSavedTweets: () => {
-    const savedTweets = localStorage.getItem('tweetCopier_savedTweets');
-    return savedTweets ? JSON.parse(savedTweets) : [];
+  getSavedTweets: (callback) => {
+    chrome.storage.local.get(['tweetCopier_savedTweets'], (result) => {
+      const tweets = result.tweetCopier_savedTweets || [];
+      callback(tweets);
+    });
   },
   
   /**
    * Updates an existing tweet
    * @param {string} localId - The local ID of the tweet to update
    * @param {Object} updatedData - The data to update
-   * @returns {boolean} Success status
+   * @param {Function} callback - Optional callback after update
    */
-  updateTweet: (localId, updatedData) => {
-    const savedTweets = tweetStorage.getSavedTweets();
-    const tweetIndex = savedTweets.findIndex(tweet => tweet.localId === localId);
-    
-    if (tweetIndex === -1) {
-      console.error('Tweet not found for updating:', localId);
-      return false;
-    }
-    
-    // Update the tweet
-    savedTweets[tweetIndex] = {
-      ...savedTweets[tweetIndex],
-      ...updatedData,
-      isEdited: true,
-      lastEditTime: new Date().toISOString()
-    };
-    
-    localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(savedTweets));
-    console.log('Tweet updated:', savedTweets[tweetIndex]);
-    return true;
+  updateTweet: (localId, updatedData, callback) => {
+    chrome.storage.local.get(['tweetCopier_savedTweets'], (result) => {
+      const savedTweets = result.tweetCopier_savedTweets || [];
+      const tweetIndex = savedTweets.findIndex(tweet => tweet.localId === localId);
+      
+      if (tweetIndex === -1) {
+        console.error('Tweet not found for updating:', localId);
+        if (callback) callback(false);
+        return;
+      }
+      
+      // Update the tweet
+      savedTweets[tweetIndex] = {
+        ...savedTweets[tweetIndex],
+        ...updatedData,
+        isEdited: true,
+        lastEditTime: new Date().toISOString()
+      };
+      
+      chrome.storage.local.set({ 'tweetCopier_savedTweets': savedTweets }, () => {
+        console.log('Tweet updated:', savedTweets[tweetIndex]);
+        if (callback) callback(true);
+      });
+    });
   },
   
   /**
    * Deletes a tweet from storage
    * @param {string} localId - The local ID of the tweet to delete
-   * @returns {boolean} Success status
+   * @param {Function} callback - Optional callback after deletion
    */
-  deleteTweet: (localId) => {
-    const savedTweets = tweetStorage.getSavedTweets();
-    const filteredTweets = savedTweets.filter(tweet => tweet.localId !== localId);
-    
-    if (filteredTweets.length === savedTweets.length) {
-      console.error('Tweet not found for deletion:', localId);
-      return false;
-    }
-    
-    localStorage.setItem('tweetCopier_savedTweets', JSON.stringify(filteredTweets));
-    console.log('Tweet deleted:', localId);
-    return true;
+  deleteTweet: (localId, callback) => {
+    chrome.storage.local.get(['tweetCopier_savedTweets'], (result) => {
+      const savedTweets = result.tweetCopier_savedTweets || [];
+      const filteredTweets = savedTweets.filter(tweet => tweet.localId !== localId);
+      
+      if (filteredTweets.length === savedTweets.length) {
+        console.error('Tweet not found for deletion:', localId);
+        if (callback) callback(false);
+        return;
+      }
+      
+      chrome.storage.local.set({ 'tweetCopier_savedTweets': filteredTweets }, () => {
+        console.log('Tweet deleted:', localId);
+        if (callback) callback(true);
+      });
+    });
   },
   
   /**
    * Logs all saved tweets to console in table format
    */
   logTweetsTable: () => {
-    const tweets = tweetStorage.getSavedTweets();
-    if (tweets.length === 0) {
-      console.log('No saved tweets found.');
-      return;
-    }
-    
-    // Format data for console table
-    const tableData = tweets.map(tweet => ({
-      ID: tweet.localId,
-      Author: tweet.author,
-      Text: tweet.text.length > 30 ? tweet.text.substring(0, 30) + '...' : tweet.text,
-      'Copied At': new Date(tweet.timestamp).toLocaleString(),
-      Edited: tweet.isEdited ? 'Yes' : 'No'
-    }));
-    
-    console.table(tableData);
-    console.log('Full tweet data:', tweets);
+    tweetStorage.getSavedTweets((tweets) => {
+      if (tweets.length === 0) {
+        console.log('No saved tweets found.');
+        return;
+      }
+      
+      // Format data for console table
+      const tableData = tweets.map(tweet => ({
+        ID: tweet.localId,
+        Author: tweet.author,
+        Text: tweet.text.length > 30 ? tweet.text.substring(0, 30) + '...' : tweet.text,
+        'Copied At': new Date(tweet.timestamp).toLocaleString(),
+        Edited: tweet.isEdited ? 'Yes' : 'No'
+      }));
+      
+      console.table(tableData);
+      console.log('Full tweet data:', tweets);
+    });
   }
 };
 
@@ -360,7 +373,7 @@ const createThreadCopyDropdown = (tweetElement) => {
   const button = document.createElement('button');
   button.className = 'thread-copy-button';
   button.innerHTML = '🧵'; // Thread icon
-  button.title = 'Copy Thread Tweets';
+  button.title = '';
   
   const dropdownContent = document.createElement('div');
   dropdownContent.className = 'thread-copy-dropdown-content';
@@ -536,9 +549,9 @@ const init = () => {
   // Expose storage functions to global scope for console access
   window.tweetCopier = {
     listTweets: () => tweetStorage.logTweetsTable(),
-    getTweets: () => tweetStorage.getSavedTweets(),
-    deleteTweet: (localId) => tweetStorage.deleteTweet(localId),
-    updateTweet: (localId, updatedData) => tweetStorage.updateTweet(localId, updatedData)
+    getTweets: (callback) => tweetStorage.getSavedTweets(callback),
+    deleteTweet: (localId, callback) => tweetStorage.deleteTweet(localId, callback),
+    updateTweet: (localId, updatedData, callback) => tweetStorage.updateTweet(localId, updatedData, callback)
   };
   
   // Log a message to show how to access the tweets database
@@ -547,9 +560,9 @@ const init = () => {
   
   Use these commands in the console to manage your copied tweets:
   - tweetCopier.listTweets() - View all tweets in table format
-  - tweetCopier.getTweets() - Get the raw tweet data
-  - tweetCopier.deleteTweet("localId") - Delete a tweet by its localId
-  - tweetCopier.updateTweet("localId", { text: "Updated text" }) - Update a tweet
+  - tweetCopier.getTweets(callback) - Get the raw tweet data
+  - tweetCopier.deleteTweet("localId", callback) - Delete a tweet by its localId
+  - tweetCopier.updateTweet("localId", { text: "Updated text" }, callback) - Update a tweet
   `);
 };
 
